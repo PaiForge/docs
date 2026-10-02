@@ -46,7 +46,7 @@ export type Direction = typeof Direction[keyof typeof Direction];
 ## その他 (Others)
 ### 型アサーション (Type Assertions)
 **ルール:** `as` による型アサーションを原則禁止します (`consistent-type-assertions: never`)。  
-**理由:** 型安全性を破壊する可能性があるため。型を特定する必要がある場合は、ユーザー定義型ガード関数 (`isTuple` 等) やバリデーション付きファクトリ関数 (`asHaiKindId` 等) を使用してください。ただし、テストコード内では例外的に許可しています。
+**理由:** 型安全性を破壊する可能性があるため。型を特定する必要がある場合は、ユーザー定義型ガード関数 (`isTuple` 等) やバリデーション付きファクトリ関数 (`validateHaiKindId` / `validateHaiId` 等) を使用してください。ただし、テストコード内では例外的に許可しています。
 
 ### ラッパーオブジェクト型 (Wrapper Types)
 **ルール:** `String`, `Number`, `Boolean`, `Symbol`, `Object` などのラッパー型を使用しないでください。代わりにプリミティブ型 (`string`, `number` 等) を使用してください。  
@@ -75,7 +75,7 @@ export type Direction = typeof Direction[keyof typeof Direction];
 **理由:** 例外は関数のシグネチャに現れないため、呼び出し元でのハンドリング漏れを引き起こしやすく、純粋関数の原則（参照透過性）を破壊するためです。
 
 ### スマートコンストラクタの徹底 (Parse, don't validate)
-**ルール:** `HaiId` や `Tehai13` などのドメイン固有の型（Branded Types）を生成する際は、必ずバリデーションを行い `Result<T, E>` を返すファクトリ関数（スマートコンストラクタ）を経由させてください。バリデーションに失敗した場合は `Err` を返します。
+**ルール:** `HaiId` や `Tehai13` などのドメイン固有の型（Branded Types）を生成する際は、必ずバリデーションを行い `Result<T, E>` を返すファクトリ関数（スマートコンストラクタ、例: `validateHaiId`, `validateTehai13`）を経由させてください。バリデーションに失敗した場合は `Err` を返します。範囲検証を行わずに `as` で型を付与するだけの関数をファクトリとして扱わないでください。
 **理由:** 不正な状態を持つオブジェクトの生成を文法および型のレベルで完全に防ぎ、「一度生成されたオブジェクトは常に正しい状態である」という不変条件を保証するためです。
 
 ## エラーハンドリング (Error Handling)
