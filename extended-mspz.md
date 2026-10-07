@@ -231,7 +231,7 @@ suit        = "m" | "p" | "s" | "z" ;
 | 表記 | 意味 |
 |---|---|
 | `123m456p789s11z22z` | 門前の手牌。面子ブロックなし |
-| `` | 空の手牌 |
+| （空文字列） | 空の手牌 |
 | `[1-23m]` | 1m を上家からチー |
 | `[12-3m]` | 2m を上家からチー |
 | `[40-6m]` | 赤 5m を上家からチー |
@@ -293,3 +293,41 @@ suit        = "m" | "p" | "s" | "z" ;
 | 面子の順序 | 「順序は問わない」と記述。正規形は未定義 | 意味を持たないと明記し、正規形で整列順を定義 |
 | 正規形 | 未定義 | 第 7 節で定義 |
 | 適用範囲 | 未記述 | 第 8 節で定義 |
+
+## 参照実装
+
+参照実装は [PaiForge/riichi-mahjong](https://github.com/PaiForge/riichi-mahjong)（TypeScript）です。本節は実装の状況を記したもので、記法の仕様の一部ではありません。
+
+### 実装状況
+
+2026 年 10 月時点の riichi-mahjong は旧仕様（1.x）を実装しており、本書 2.0 には未対応です。具体的には次の差分があります。
+
+- 方向注釈 `-` `=` `+`、加槓 `{...}`、`^` を解釈できない。鳴き元はチー=上家、ポン・大明槓=対面を固定で設定する
+- `0` および字牌の範囲外の数字を黙って読み飛ばす（2.0 では拒否が必須）
+- `[1m2m3m]` のような複数サフィックスのブロックを受理する
+- 牌種 ID（`HaiKindId`）は 34 種のみで赤属性を持たないため、赤 5 の保持には牌 ID（`HaiId`）側の対応が必要
+- 面子の型（`Furo`）に鳴いた牌・加槓牌のフィールドがない
+- 正規形への変換は riichi-mahjong には無く、mahjong-scoring 側の直列化が独自に純手牌の整列を行っている
+
+### 公開 API
+
+いずれも `neverthrow` の `Result` を返します。例外は投げません。
+
+| 関数 | 説明 |
+|---|---|
+| `parseMspz(input: string): Result<Tehai, MspzParseError>` | 標準 MSPZ（面子ブロックなし）を解析し、全牌を `closed` に格納した `Tehai` を返す |
+| `parseExtendedMspz(input: string): Result<Tehai, MspzParseError>` | 拡張 MSPZ を解析し、純手牌を `closed`、面子ブロックを `exposed` に格納した `Tehai` を返す |
+| `isMspz(input: string): input is MspzString` | 標準 MSPZ として書式が正しいかを判定する |
+| `isExtendedMspz(input: string): input is ExtendedMspzString` | `[` または `(` を含み、かつ拡張 MSPZ として書式が正しいかを判定する。括弧を含まない文字列は正しい MSPZ でも `false` |
+
+```typescript
+import { parseExtendedMspz } from "@pai-forge/riichi-mahjong";
+
+const result = parseExtendedMspz("123m[456p]"); // 1.x 表記
+if (result.isOk()) {
+  result.value.closed;  // [1m, 2m, 3m]
+  result.value.exposed; // [ { type: "Shuntsu", hais: [4p, 5p, 6p], furo: { type: "Chi", from: Kamicha } } ]
+}
+```
+
+暗槓は `exposed` に `furo` を持たない `Kantsu` として格納されます。
